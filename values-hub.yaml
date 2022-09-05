@@ -6,21 +6,35 @@ clusterGroup:
   insecureUnsealVaultInsideCluster: false
 
   namespaces:
-  - open-cluster-management
-  - vault
-  - golang-external-secrets
-  - config-demo
+  - bobbycar
 
   subscriptions:
-    acm:
-      name: advanced-cluster-management
-      namespace: open-cluster-management
-      channel: release-2.5
-      csv: advanced-cluster-management.v2.5.0
+    amq-broker-rhel8:
+      name: amq-broker-rhel8
+      namespace: bobbycar
+      channel: 7.x
+      csv: amq-broker-operator.v7.9.1-opr-2
+
+    amq-streams:
+      name: amq-streams
+      namespace: bobbycar
+      channel: stable
+      csv: amqstreams.v2.0.0-0
+
+    camelk:
+      name: red-hat-camel-k
+      namespace: bobbycar
+      channel: 1.6.x
+      csv: red-hat-camel-k-operator.v1.6.3
+
+    datagrid:
+      name: datagrid
+      namespace: bobbycar
+      channel: 8.2.x
+      csv: datagrid-operator.v8.2.8
 
   projects:
-  - hub
-  - config-demo
+  - bobbycar
 
   applications:
     acm:
