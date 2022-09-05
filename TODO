@@ -1,0 +1,15 @@
+A) 
+Bobbycar needs two domains:
+1. apps.bandini-hub.blueprints.redhat.com
+2. api.bandini-hub.blueprints.redhat.com
+
+Either we pass them both down (and maybe basedomain while we're at it?) or
+we only pass baseDomain and the rest is built in the pattern.
+Latter is a breaking change though
+
+B)
+Need to replace/implement the following values
+--set-string ocpDomain="$APP_DOMAIN" \
+--set-string ocpApi="$API_DOMAIN" \
+--set-string namespace="$NAMESPACE" \
+--set-string dashboard.config.googleApiKey="$GOOGLE_API_KEY"

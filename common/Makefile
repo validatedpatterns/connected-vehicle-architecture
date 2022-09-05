@@ -6,6 +6,7 @@ TARGET_REPO=$(shell git remote show $(TARGET_ORIGIN) | grep Push | sed -e 's/.*U
 # git branch --show-current is also available as of git 2.22, but we will use this for compatibility
 TARGET_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 HUBCLUSTER_APPS_DOMAIN=$(shell oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+HUBCLUSTER_API_DOMAIN="api."$(shell oc get dns.config/cluster -o jsonpath={.spec.baseDomain})
 
 # --set values always take precedence over the contents of -f
 HELM_OPTS=-f values-global.yaml --set main.git.repoURL="$(TARGET_REPO)" --set main.git.revision=$(TARGET_BRANCH) \

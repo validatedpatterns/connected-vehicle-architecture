@@ -37,17 +37,6 @@ clusterGroup:
   - bobbycar
 
   applications:
-    acm:
-      name: acm
-      namespace: open-cluster-management
-      project: hub
-      path: common/acm
-      ignoreDifferences:
-      - group: internal.open-cluster-management.io
-        kind: ManagedClusterInfo
-        jsonPointers:
-          - /spec/loggingCA
-
     vault:
       name: vault
       namespace: vault
@@ -81,11 +70,17 @@ clusterGroup:
       project: hub
       path: common/golang-external-secrets
 
-    config-demo:
-      name: config-demo
-      namespace: config-demo
-      project: config-demo
-      path: charts/all/config-demo
+    bobbycar-core-infra:
+      name: bobbycar-core-infra
+      namespace: bobbycar
+      project: bobbycar
+      path: charts/hub/bobbycar-core-infra
+
+    bobbycar-core-apps:
+      name: bobbycar-core-apps
+      namespace: bobbycar
+      project: bobbycar
+      path: charts/hub/bobbycar-core-apps
 
   imperative:
     # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
