@@ -1,0 +1,38 @@
+namespace:
+appName: Bobbycar
+ocpDomain:
+
+datagrid:
+  replicas: 1
+  type: DataGrid
+  cpu: '500m'
+  memory: 1Gi
+
+amqBroker:
+  instances: 1
+  console:
+    expose: true  
+
+kafka: 
+  cluster:
+    brokerReplicas: 2
+    zookeeperReplicas: 3
+  bridge: 
+    replicas: 1
+    port: 8080
+  topic:
+    gps:
+      name: bobbycar-gps
+      partitions: 1
+      replicas: 1
+      retention: 60000
+    metrics:
+      name: bobbycar-metrics
+      partitions: 1
+      replicas: 1
+      retention: 60000
+    zonechange:
+      name: bobbycar-zonechange
+      partitions: 1
+      replicas: 1
+      retention: 300000

@@ -1,0 +1,15 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: cache-service
+  labels:
+    camel.apache.org/integration: cache-service
+spec:
+  host: cache-service-{{ .Values.namespace }}.{{ .Values.ocpDomain }}
+  to:
+    kind: Service
+    name: cache-service
+    weight: 100
+  port:
+    targetPort: http
+  wildcardPolicy: None

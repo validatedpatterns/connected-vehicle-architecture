@@ -1,0 +1,7 @@
+Bobbycar core infrastructure components:
+
+- AMQ Broker CR
+- Datagrid CR and Route
+- AMQ Streams Kafka Cluster
+- AMQ Streams Kafka HTTP Bridge Cluster and Route
+- 3 Kafka Topics
