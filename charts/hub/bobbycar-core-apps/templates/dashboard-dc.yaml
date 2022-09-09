@@ -47,9 +47,9 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-        - configMap:
+        - secret:
             defaultMode: 438
-            name: dashboard-config
+            secretName: dashboard-config
           name: dashboard-cfg-vol
   test: false
   triggers:
