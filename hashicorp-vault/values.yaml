@@ -1,6 +1,11 @@
 ---
 global:
   openshift: true
+  pattern: test
+  localClusterDomain: apps.foo.cluster.com
+
+clusterGroup:
+  name: hub1
 
 vault:
   injector:
