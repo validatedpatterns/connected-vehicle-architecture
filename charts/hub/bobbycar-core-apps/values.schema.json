@@ -10,7 +10,6 @@
       "namespace": "bobbycar",
       "appName": "Bobbycar",
       "ocpDomain": "apps.ocp3.stormshift.coe.muc.redhat.com",
-      "ocpApi": "api.ocp3.stormshift.coe.muc.redhat.com",
       "mqtt": {
         "topic": {
           "mqttZoneChangeTopic": "bobbycar/zonechange",
@@ -57,7 +56,6 @@
     "namespace",
     "appName",
     "ocpDomain",
-    "ocpApi",
     "mqtt",
     "kafka",
     "datagrid",
@@ -96,17 +94,6 @@
       "pattern": "^.+$",
       "examples": [
         "apps.ocp3.stormshift.coe.muc.redhat.com"
-      ]
-    },
-    "ocpApi": {
-      "$id": "#/properties/ocpApi",
-      "type": "string",
-      "title": "ocpApi",
-      "description": "The OpenShift API domain name.",
-      "default": "",
-      "pattern": "^.+$",
-      "examples": [
-        "api.ocp3.stormshift.coe.muc.redhat.com"
       ]
     },
     "mqtt": {

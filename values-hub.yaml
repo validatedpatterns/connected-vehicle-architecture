@@ -1,4 +1,5 @@
 ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
+#ocpApi: api.mcg-two.blueprints.rhecoeng.com⤶
 namespace: bobbycar
 
 clusterGroup:
