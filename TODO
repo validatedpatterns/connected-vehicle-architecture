@@ -1,15 +1,8 @@
-A) 
-Bobbycar needs two domains:
-1. apps.bandini-hub.blueprints.redhat.com
-2. api.bandini-hub.blueprints.redhat.com
+A) Currently the demo needs the two domains:
+	1. apps.bandini-hub.blueprints.redhat.com (ocpDomain)
+	2. api.bandini-hub.blueprints.redhat.com (ocpApi)
 
-Either we pass them both down (and maybe basedomain while we're at it?) or
-we only pass baseDomain and the rest is built in the pattern.
-Latter is a breaking change though
-
-B)
-Need to replace/implement the following values
---set-string ocpDomain="$APP_DOMAIN" \
---set-string ocpApi="$API_DOMAIN" \
---set-string namespace="$NAMESPACE" \
---set-string dashboard.config.googleApiKey="$GOOGLE_API_KEY"
+1. is done by setting  ocpDomain to hubClusterDomain variable.
+For 2. I am doing a `replace "apps." "api."` of `ocpDomain`, that is likely suboptimal.
+Am I guaranteed it is called api. ?
+I need to figure out how we can fetch it programmatically first
