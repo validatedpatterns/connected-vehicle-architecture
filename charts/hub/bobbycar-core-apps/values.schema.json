@@ -36,7 +36,6 @@
       },
       "dashboard": {
         "config": {
-          "googleApiKey": "replaceme",
           "threeScaleApiKey": "replaceme"
         }
       },
@@ -355,7 +354,6 @@
       "examples": [
         {
           "config": {
-            "googleApiKey": "replaceme",
             "threeScaleApiKey": "replaceme"
           }
         }
@@ -372,26 +370,13 @@
           "default": {},
           "examples": [
             {
-              "googleApiKey": "replaceme",
               "threeScaleApiKey": "replaceme"
             }
           ],
           "required": [
-            "googleApiKey",
             "threeScaleApiKey"
           ],
           "properties": {
-            "googleApiKey": {
-              "$id": "#/properties/dashboard/properties/config/properties/googleApiKey",
-              "type": "string",
-              "title": "googleApiKey",
-              "description": "Your valid Google Maps API key.",
-              "default": "",
-              "pattern": "^.+$",
-              "examples": [
-                "myGoogleMapsApiKey"
-              ]
-            },
             "threeScaleApiKey": {
               "$id": "#/properties/dashboard/properties/config/properties/threeScaleApiKey",
               "type": "string",
