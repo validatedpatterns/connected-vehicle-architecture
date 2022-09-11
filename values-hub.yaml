@@ -1,4 +1,4 @@
-ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
+#ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
 #ocpApi: api.mcg-two.blueprints.rhecoeng.com⤶
 namespace: bobbycar
 
@@ -8,8 +8,6 @@ clusterGroup:
   # Note: setting this to true stores the vault unseal keys inside a cluster secret and
   # is fundamentally insecure
   insecureUnsealVaultInsideCluster: false
-  extraLocalClusterDomainFields:
-    - ocpDomain
 
   namespaces:
   - bobbycar
@@ -84,7 +82,7 @@ clusterGroup:
       namespace: bobbycar
       project: bobbycar
       path: charts/hub/bobbycar-core-infra
-      extraLocalClusterDomainFields:
+      extraHubClusterDomainFields:
         - ocpDomain
 
     bobbycar-core-apps:
@@ -92,7 +90,7 @@ clusterGroup:
       namespace: bobbycar
       project: bobbycar
       path: charts/hub/bobbycar-core-apps
-      extraLocalClusterDomainFields:
+      extraHubClusterDomainFields:
         - ocpDomain
 
   #imperative:
