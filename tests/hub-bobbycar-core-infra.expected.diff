@@ -1,0 +1,77 @@
+--- tests/hub-bobbycar-core-infra-naked.expected.yaml
++++ tests/hub-bobbycar-core-infra-normal.expected.yaml
+@@ -4,7 +4,7 @@
+ kind: ActiveMQArtemis
+ metadata:
+   name: bobbycar-amq-mqtt
+-  namespace: test
++  namespace: bobbycar
+ spec:
+   deploymentPlan:
+     size: 1
+@@ -26,7 +26,7 @@
+ kind: Infinispan
+ metadata:
+   name: bobbycar-dg
+-  namespace: test
++  namespace: bobbycar
+ spec:
+   replicas: 1
+   service:
+@@ -55,7 +55,7 @@
+ kind: Kafka
+ metadata:
+   name: bobbycar-cluster
+-  namespace: test
++  namespace: bobbycar
+ spec:
+   kafka:
+     version: 3.0.0
+@@ -94,7 +94,7 @@
+ kind: KafkaBridge
+ metadata:
+   name: bobbycar
+-  namespace: test
++  namespace: bobbycar
+ spec:
+   replicas: 1
+   bootstrapServers: bobbycar-cluster-kafka-bootstrap:9092
+@@ -106,7 +106,7 @@
+ kind: KafkaTopic
+ metadata:
+   name: bobbycar-gps
+-  namespace: test
++  namespace: bobbycar
+   labels:
+     strimzi.io/cluster: bobbycar-cluster
+ spec:
+@@ -121,7 +121,7 @@
+ kind: KafkaTopic
+ metadata:
+   name: bobbycar-metrics
+-  namespace: test
++  namespace: bobbycar
+   labels:
+     strimzi.io/cluster: bobbycar-cluster
+ spec:
+@@ -136,7 +136,7 @@
+ kind: KafkaTopic
+ metadata:
+   name: bobbycar-zonechange
+-  namespace: test
++  namespace: bobbycar
+   labels:
+     strimzi.io/cluster: bobbycar-cluster
+ spec:
+@@ -151,9 +151,9 @@
+ apiVersion: route.openshift.io/v1
+ metadata:
+   name: kafka-bridge
+-  namespace: test
++  namespace: bobbycar
+ spec:
+-  host: bobbycar-test.test.cluster.domain.com
++  host: bobbycar-bobbycar.test.cluster.domain.com
+   to:
+     kind: Service
+     name: bobbycar-bridge-service

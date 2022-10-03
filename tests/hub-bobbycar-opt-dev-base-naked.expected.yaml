@@ -1,0 +1,440 @@
+---
+# Source: bobbycar-opt-dev-base/templates/gogs-postgres.yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: postgresql
+  namespace: default
+stringData:
+  database-name: gogs
+  database-password: gogs
+  database-user: gogs
+type: Opaque
+---
+# Source: bobbycar-opt-dev-base/templates/gogs-postgres.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgresql
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: bobbycar-opt-dev-base/templates/gogs.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gogs-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: bobbycar-opt-dev-base/templates/gogs.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gogs-config
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: bobbycar-opt-dev-base/templates/nexus.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nexus-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Source: bobbycar-opt-dev-base/templates/sonarqube.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Source: bobbycar-opt-dev-base/templates/gogs-postgres.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgresql
+  namespace: default
+spec:
+  ports:
+    - name: postgresql
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+  selector:
+    name: postgresql
+---
+# Source: bobbycar-opt-dev-base/templates/gogs.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: gogs
+  namespace: default
+spec:
+  selector:
+    app: gogs
+  ports:
+    - protocol: TCP
+      port: 3000
+---
+# Source: bobbycar-opt-dev-base/templates/nexus.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: nexus3
+  namespace: default
+spec:
+  ports:
+    - name: 8081-tcp
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+  selector:
+    app: nexus3
+    deploymentconfig: nexus3
+---
+# Source: bobbycar-opt-dev-base/templates/sonarqube.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: sonarqube
+  namespace: default
+spec:
+  ports:
+    - name: 9000-tcp
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+  selector:
+    app: sonarqube
+    deploymentconfig: sonarqube
+  type: ClusterIP
+  sessionAffinity: None
+---
+# Source: bobbycar-opt-dev-base/templates/gogs.yaml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  annotations:
+    app.openshift.io/connects-to: >-
+      [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"postgresql"}]
+  name: gogs
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: bobbycar-opt-dev-base
+    helm.sh/chart: bobbycar-opt-dev-base-1.0.0
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gogs
+  template:
+    metadata:
+      labels:
+        app: gogs
+    spec:
+      containers:
+        - name: gogs
+          image: quay.io/davivcgarcia/ubi-gogs:v0.11.91-2
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: http
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 512Mi
+              cpu: 2
+          volumeMounts:
+            - name: data
+              mountPath: /opt/gogs/data
+            - name: config
+              mountPath: /opt/gogs/custom
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 3
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: gogs-data
+        - name: config
+          persistentVolumeClaim:
+            claimName: gogs-config
+---
+# Source: bobbycar-opt-dev-base/templates/gogs-postgres.yaml
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: postgresql
+  namespace: default
+  labels:
+    app.kubernetes.io/part-of: bobbycar-opt-dev-base
+    helm.sh/chart: bobbycar-opt-dev-base-1.0.0
+spec:
+  strategy:
+    type: Recreate
+    recreateParams:
+      timeoutSeconds: 600
+    resources: {}
+    activeDeadlineSeconds: 21600
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    name: postgresql
+  template:
+    metadata:
+      labels:
+        name: postgresql
+    spec:
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: postgresql
+      containers:
+        - readinessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: postgresql
+          livenessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+                - '--live'
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-user
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-password
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-name
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/pgsql/data
+          terminationMessagePolicy: File
+          image: image-registry.openshift-image-registry.svc:5000/openshift/postgresql
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+---
+# Source: bobbycar-opt-dev-base/templates/nexus.yaml
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: nexus3
+  namespace: default
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    app: nexus3
+    deploymentconfig: nexus3
+  template:
+    metadata:
+      labels:
+        app: nexus3
+        deploymentconfig: nexus3
+    spec:
+      volumes:
+        - name: nexus-data
+          persistentVolumeClaim:
+            claimName: nexus-data
+      containers:
+        - name: nexus3
+          image: sonatype/nexus3
+          ports:
+            - containerPort: 8081
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: nexus-data
+              mountPath: /nexus-data
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+---
+# Source: bobbycar-opt-dev-base/templates/sonarqube.yaml
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: sonarqube
+  namespace: default
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    app: sonarqube
+    deploymentconfig: sonarqube
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sonarqube
+        deploymentconfig: sonarqube
+    spec:
+      containers:
+        - name: sonarqube
+          image: sonarqube:9.0.1-community
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /opt/sonarqube/data
+              name: sonarqube-data
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: sonarqube-data
+          persistentVolumeClaim:
+            claimName: sonarqube-data
+---
+# Source: bobbycar-opt-dev-base/templates/gogs.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: gogs
+  namespace: default
+  annotations:
+    openshift.io/host.generated: 'true'
+spec:
+  to:
+    kind: Service
+    name: gogs
+    weight: 100
+  port:
+    targetPort: 3000
+  wildcardPolicy: None
+---
+# Source: bobbycar-opt-dev-base/templates/nexus.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: nexus3
+  namespace: default
+spec:
+  to:
+    kind: Service
+    name: nexus3
+    weight: 100
+  port:
+    targetPort: 8081-tcp
+  wildcardPolicy: None
+---
+# Source: bobbycar-opt-dev-base/templates/sonarqube.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: sonarqube
+  namespace: default
+spec:
+  to:
+    kind: Service
+    name: sonarqube
+    weight: 100
+  port:
+    targetPort: 9000-tcp
+  wildcardPolicy: None

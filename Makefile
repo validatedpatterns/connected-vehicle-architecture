@@ -28,18 +28,19 @@ common-test:
 	make -C common -f common/Makefile test
 
 test:
-	make -f common/Makefile CHARTS="$(wildcard charts/all/*)" PATTERN_OPTS="-f values-global.yaml -f values-hub.yaml" test
-	make -f common/Makefile CHARTS="$(wildcard charts/hub/*)" PATTERN_OPTS="-f values-global.yaml -f values-hub.yaml" test
+	make -f common/Makefile CHARTS="$(wildcard charts/all/bobby*)" PATTERN_OPTS="-f values-global.yaml -f values-hub.yaml" test
+	make -f common/Makefile CHARTS="$(wildcard charts/hub/bobby*)" PATTERN_OPTS="-f values-global.yaml -f values-hub.yaml" test
 	#make -f common/Makefile CHARTS="$(wildcard charts/region/*)" PATTERN_OPTS="-f values-region-one.yaml" test
 
 helmlint:
 	# no regional charts just yet: "$(wildcard charts/region/*)"
-	@for t in "$(wildcard charts/*/*)"; do helm lint $$t; if [ $$? != 0 ]; then exit 1; fi; done
+	@for t in "$(wildcard charts/*/bobby*)"; do helm lint $$t; if [ $$? != 0 ]; then exit 1; fi; done
 
-.PHONY: kubeval
+.PHONY: kubeconform
+KUBECONFORM_SKIP=-skip 'CustomResourceDefinition,Integration,BobbycarZone,Infinispan,Kafka,KafkaBridge,KafkaTopic,ActiveMQArtemis,EventListener,TriggerBinding,TriggerTemplate,Pipeline,Trigger,Task,ApiServerSource,Service,KafkaSource,Broker'
 kubeconform:
-	make -f common/Makefile CHARTS="$(wildcard charts/all/*)" kubeconform
-	make -f common/Makefile CHARTS="$(wildcard charts/hub/*)" kubeconform
+	make -f common/Makefile KUBECONFORM_SKIP="$(KUBECONFORM_SKIP)" CHARTS="$(wildcard charts/all/bobby*)" kubeconform
+	make -f common/Makefile KUBECONFORM_SKIP="$(KUBECONFORM_SKIP)" CHARTS="$(wildcard charts/hub/bobby*)" kubeconform
 
 super-linter: ## Runs super linter locally
-	make -f common/Makefile DISABLE_LINTERS="-e VALIDATE_TEKTON=false -e VALIDATE_ANSIBLE=false" super-linter
+	make -f common/Makefile DISABLE_LINTERS="-e VALIDATE_TEKTON=false" super-linter
