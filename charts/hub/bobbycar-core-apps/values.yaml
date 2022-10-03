@@ -1,6 +1,6 @@
-namespace:
+namespace: test
 appName: Bobbycar
-ocpDomain:
+ocpDomain: test.cluster.domain.com
 ocpApi:
 
 mqtt:

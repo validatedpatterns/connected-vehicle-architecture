@@ -1,0 +1,163 @@
+---
+# Source: bobbycar-core-infra/templates/amq-broker-cr.yaml
+apiVersion: broker.amq.io/v2alpha5
+kind: ActiveMQArtemis
+metadata:
+  name: bobbycar-amq-mqtt
+  namespace: test
+spec:
+  deploymentPlan:
+    size: 1
+    image: placeholder
+    # FIXME(bandini): these seem to disappear from the live manifest
+    #requireLogin: false
+    #persistenceEnabled: false
+    journalType: nio
+    messageMigration: false
+  console:
+    expose: true
+  acceptors:
+    - name: all
+      port: 61616
+      expose: true
+---
+# Source: bobbycar-core-infra/templates/datagrid.yaml
+apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: bobbycar-dg
+  namespace: test
+spec:
+  replicas: 1
+  service:
+    type: DataGrid
+    container:
+      storage: 1Gi
+  container:
+    cpu: 500m
+    extraJvmOpts: '-XX:NativeMemoryTracking=summary -Dinfinispan.bind.address=0.0.0.0'
+    memory: 1Gi
+  expose:
+    type: Route
+  security:
+    authorization:
+      enabled: false
+    endpointAuthentication: false
+  logging:
+    categories: 
+      org.infinispan: info
+      org.jgroups: info
+      org.jgroups.protocols.TCP: error
+      org.jgroups.protocols.relay.RELAY2: error
+---
+# Source: bobbycar-core-infra/templates/kafka-cr.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: bobbycar-cluster
+  namespace: test
+spec:
+  kafka:
+    version: 3.0.0
+    replicas: 2
+    listeners:
+    - name: plain
+      port: 9092
+      type: internal
+      tls: false
+    - name: tls
+      port: 9093
+      type: internal
+      tls: true
+    - name: external
+      port: 9094
+      tls: true
+      type: route
+    config:
+      inter.broker.protocol.version: '3.0'
+      log.message.format.version: '3.0'
+      offsets.topic.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      transaction.state.log.replication.factor: 1
+    storage:
+      type: ephemeral 
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+---
+# Source: bobbycar-core-infra/templates/kafka-bridge.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaBridge
+metadata:
+  name: bobbycar
+  namespace: test
+spec:
+  replicas: 1
+  bootstrapServers: bobbycar-cluster-kafka-bootstrap:9092
+  http:
+    port: 8080
+---
+# Source: bobbycar-core-infra/templates/kafka-gps-topic.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: bobbycar-gps
+  namespace: test
+  labels:
+    strimzi.io/cluster: bobbycar-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 60000
+    segment.bytes: 1073741824
+---
+# Source: bobbycar-core-infra/templates/kafka-metrics-topic.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: bobbycar-metrics
+  namespace: test
+  labels:
+    strimzi.io/cluster: bobbycar-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 60000
+    segment.bytes: 1073741824
+---
+# Source: bobbycar-core-infra/templates/kafka-zonechange-topic.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: bobbycar-zonechange
+  namespace: test
+  labels:
+    strimzi.io/cluster: bobbycar-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 300000
+    segment.bytes: 1073741824
+---
+# Source: bobbycar-core-infra/templates/kafka-bridge-route.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: kafka-bridge
+  namespace: test
+spec:
+  host: bobbycar-test.test.cluster.domain.com
+  to:
+    kind: Service
+    name: bobbycar-bridge-service
+    weight: 100
+  port:
+    targetPort: rest-api
+  wildcardPolicy: None
