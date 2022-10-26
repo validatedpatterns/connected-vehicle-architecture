@@ -31,6 +31,3 @@ test:
 KUBECONFORM_SKIP=-skip 'CustomResourceDefinition,Integration,BobbycarZone,Infinispan,Kafka,KafkaBridge,KafkaTopic,ActiveMQArtemis,EventListener,TriggerBinding,TriggerTemplate,Pipeline,Trigger,Task,ApiServerSource,Service,KafkaSource,Broker'
 kubeconform:
 	make -f common/Makefile KUBECONFORM_SKIP="$(KUBECONFORM_SKIP)" kubeconform
-
-super-linter: ## Runs super linter locally
-	make -f common/Makefile DISABLE_LINTERS="-e VALIDATE_TEKTON=false" super-linter

@@ -1,4 +1,4 @@
-NAME=$(shell basename `pwd`)
+NAME=$(shell basename "`pwd`")
 # This is to ensure that whether we start with a git@ or https:// URL, we end up with an https:// URL
 # This is because we expect to use tokens for repo authentication as opposed to SSH keys
 ifneq ($(origin TARGET_SITE), undefined)
@@ -10,12 +10,12 @@ TARGET_REPO=$(shell git remote show $(TARGET_ORIGIN) | grep Push | sed -e 's/.*U
 # git branch --show-current is also available as of git 2.22, but we will use this for compatibility
 TARGET_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 HUBCLUSTER_APPS_DOMAIN=$(shell oc get ingresses.config/cluster -o jsonpath={.spec.domain})
-HUBCLUSTER_API_DOMAIN="api."$(shell oc get dns.config/cluster -o jsonpath={.spec.baseDomain})
+HUBCLUSTER_VERSION=$(shell oc get OpenShiftControllerManager/cluster -o jsonpath='{.status.version}' | sed -n -E 's/([0-9]+).([0-9]+).*/\1.\2/p')
 
 # --set values always take precedence over the contents of -f
 HELM_OPTS=-f values-global.yaml --set main.git.repoURL="$(TARGET_REPO)" --set main.git.revision=$(TARGET_BRANCH) \
-	--set global.hubClusterDomain=$(HUBCLUSTER_APPS_DOMAIN) $(TARGET_SITE_OPT)
-TEST_OPTS= -f common/examples/values-secret.yaml -f values-global.yaml --set global.repoURL="https://github.com/pattern-clone/mypattern" \
+	--set global.hubClusterDomain=$(HUBCLUSTER_APPS_DOMAIN) --set global.clusterVersion="$(HUBCLUSTER_VERSION)" $(TARGET_SITE_OPT)
+TEST_OPTS= -f values-global.yaml --set global.repoURL="https://github.com/pattern-clone/mypattern" \
 	--set main.git.repoURL="https://github.com/pattern-clone/mypattern" --set main.git.revision=main --set global.pattern="mypattern" \
 	--set global.namespace="pattern-namespace" --set global.hubClusterDomain=apps.hub.example.com --set global.localClusterDomain=apps.region.example.com --set global.clusterDomain=region.example.com\
 	--set "clusterGroup.imperative.jobs[0].name"="test" --set "clusterGroup.imperative.jobs[0].playbook"="ansible/test.yml" \
@@ -54,11 +54,17 @@ validate-prereq: ## verify pre-requisites
 	@if ! ansible-galaxy collection list | grep kubernetes.core > /dev/null 2>&1; then echo "Not found"; exit 1; fi
 	@echo "OK"
 
+# We only check the remote ssh git branch's existance if we're not running inside a container
+# as getting ssh auth working inside a container seems a bit brittle
 validate-origin: ## verify the git origin is available
 	@echo Checking repo $(TARGET_REPO) - branch $(TARGET_BRANCH)
-	@git ls-remote --exit-code --heads $(TARGET_REPO) $(TARGET_BRANCH) >/dev/null && \
-		echo "$(TARGET_REPO) - $(TARGET_BRANCH) exists" || \
-		(echo "$(TARGET_BRANCH) not found in $(TARGET_REPO)"; exit 1)
+	@if [ ! -f /run/.containerenv ]; then\
+		git ls-remote --exit-code --heads $(TARGET_REPO) $(TARGET_BRANCH) >/dev/null &&\
+				echo "$(TARGET_REPO) - $(TARGET_BRANCH) exists" ||\
+				(echo "$(TARGET_BRANCH) not found in $(TARGET_REPO)"; exit 1);\
+	else\
+		echo "Running inside a container: Skipping git ssh checks";\
+	fi
 
 # Default targets are "deploy" and "upgrade"; they can "move" to whichever install mechanism should be default.
 # legacy-deploy and legacy-upgrade should be present so that patterns don't need to depend on "deploy" and "upgrade"
@@ -87,17 +93,23 @@ load-secrets: ## loads the secrets into the vault
 	common/scripts/vault-utils.sh push_secrets common/pattern-vault.init
 
 super-linter: ## Runs super linter locally
+	rm -rf .mypy_cache
 	podman run -e RUN_LOCAL=true -e USE_FIND_ALGORITHM=true	\
 					-e VALIDATE_BASH=false \
 					-e VALIDATE_JSCPD=false \
 					-e VALIDATE_KUBERNETES_KUBEVAL=false \
 					-e VALIDATE_YAML=false \
 					-e VALIDATE_ANSIBLE=false \
+					-e VALIDATE_DOCKERFILE_HADOLINT=false \
+					-e VALIDATE_TEKTON=false \
 					$(DISABLE_LINTERS) \
 					-v $(PWD):/tmp/lint:rw,z docker.io/github/super-linter:slim-v4
 
 ansible-lint: ## run ansible lint on ansible/ folder
 	podman run -it -v $(PWD):/workspace:rw,z --workdir /workspace --entrypoint "/usr/local/bin/ansible-lint" quay.io/ansible/creator-ee:latest  "-vvv" "ansible/"
+
+ansible-unittest: ## run ansible unit tests
+	pytest -r a --fulltrace --color yes ansible/tests/unit/test_*.py
 
 .phony: install test
 
