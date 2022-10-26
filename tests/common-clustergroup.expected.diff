@@ -1,6 +1,6 @@
 --- tests/common-clustergroup-naked.expected.yaml
 +++ tests/common-clustergroup-normal.expected.yaml
-@@ -1,17 +1,222 @@
+@@ -1,17 +1,208 @@
  ---
 +# Source: pattern-clustergroup/templates/core/namespaces.yaml
 +apiVersion: v1
@@ -155,8 +155,6 @@
 +          namespace: bobbycar
 +      targetCluster: in-cluster
 +    enabled: all
-+    files:
-+      cluster_example_ca: /path/to/ca.file
 +    global:
 +      clusterDomain: region.example.com
 +      hubClusterDomain: apps.hub.example.com
@@ -178,18 +176,6 @@
 +    secretStore:
 +      kind: ClusterSecretStore
 +      name: vault-backend
-+    secrets:
-+      aws:
-+        s3Secret: test-secret
-+      cluster_example:
-+        bearerToken: <bearer_token>
-+        server: https://api.example.openshiftapps.com:6443
-+      git:
-+        token: test-git-token
-+        username: test-user
-+      imageregistry:
-+        account: test-account
-+        token: test-quay-token
 +    secretsBase:
 +      key: secret/data/hub
 +---
@@ -225,7 +211,7 @@
  # Source: pattern-clustergroup/templates/plumbing/argocd-super-role.yaml
  # WARNING: ONLY USE THIS FOR MANAGING CLUSTERS NOT FOR REGULAR USERS
  apiVersion: rbac.authorization.k8s.io/v1
-@@ -36,7 +241,7 @@
+@@ -36,7 +227,7 @@
  apiVersion: rbac.authorization.k8s.io/v1
  kind: ClusterRoleBinding
  metadata:
@@ -234,7 +220,7 @@
  roleRef:
    apiGroup: rbac.authorization.k8s.io
    kind: ClusterRole
-@@ -44,17 +249,415 @@
+@@ -44,17 +235,423 @@
  subjects:
    - kind: ServiceAccount
      # This is the {ArgoCD.name}-argocd-application-controller
@@ -516,6 +502,8 @@
 +          value: mypattern
 +        - name: global.clusterDomain
 +          value: region.example.com
++        - name: global.clusterVersion
++          value: ""
 +        - name: global.hubClusterDomain
 +          value: apps.hub.example.com
 +        - name: global.localClusterDomain
@@ -560,6 +548,8 @@
 +          value: mypattern
 +        - name: global.clusterDomain
 +          value: region.example.com
++        - name: global.clusterVersion
++          value: ""
 +        - name: global.hubClusterDomain
 +          value: apps.hub.example.com
 +        - name: global.localClusterDomain
@@ -604,6 +594,8 @@
 +          value: mypattern
 +        - name: global.clusterDomain
 +          value: region.example.com
++        - name: global.clusterVersion
++          value: ""
 +        - name: global.hubClusterDomain
 +          value: apps.hub.example.com
 +        - name: global.localClusterDomain
@@ -646,6 +638,8 @@
 +          value: mypattern
 +        - name: global.clusterDomain
 +          value: region.example.com
++        - name: global.clusterVersion
++          value: ""
 +        - name: global.hubClusterDomain
 +          value: apps.hub.example.com
 +        - name: global.localClusterDomain
@@ -656,7 +650,7 @@
  ---
  # Source: pattern-clustergroup/templates/plumbing/argocd.yaml
  apiVersion: argoproj.io/v1alpha1
-@@ -64,8 +667,8 @@
+@@ -64,8 +661,8 @@
    - argoproj.io/finalizer
    # Changing the name affects the ClusterRoleBinding, the generated secret,
    # route URL, and argocd.argoproj.io/managed-by annotations
@@ -667,7 +661,7 @@
    annotations:
      argocd.argoproj.io/compare-options: IgnoreExtraneous
  spec:
-@@ -90,15 +693,15 @@
+@@ -90,15 +687,15 @@
          command: ["/bin/bash", "-c"]
          args: ["helm template . --name-template ${ARGOCD_APP_NAME:0:52}
              -f $(git rev-parse --show-toplevel)/values-global.yaml
@@ -689,7 +683,7 @@
              --post-renderer ./kustomize"]
    applicationSet:
      resources:
-@@ -173,12 +776,94 @@
+@@ -173,12 +770,94 @@
  apiVersion: console.openshift.io/v1
  kind: ConsoleLink
  metadata:
