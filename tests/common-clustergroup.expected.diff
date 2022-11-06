@@ -1,13 +1,12 @@
 --- tests/common-clustergroup-naked.expected.yaml
 +++ tests/common-clustergroup-normal.expected.yaml
-@@ -1,17 +1,208 @@
+@@ -1,17 +1,205 @@
  ---
 +# Source: pattern-clustergroup/templates/core/namespaces.yaml
 +apiVersion: v1
 +kind: Namespace
 +metadata:
 +  labels:
-+    name: pattern
 +    argocd.argoproj.io/managed-by: mypattern-hub
 +  name: bobbycar
 +spec:
@@ -17,7 +16,6 @@
 +kind: Namespace
 +metadata:
 +  labels:
-+    name: pattern
 +    argocd.argoproj.io/managed-by: mypattern-hub
 +  name: vault
 +spec:
@@ -27,7 +25,6 @@
 +kind: Namespace
 +metadata:
 +  labels:
-+    name: pattern
 +    argocd.argoproj.io/managed-by: mypattern-hub
 +  name: golang-external-secrets
 +spec:
@@ -211,7 +208,7 @@
  # Source: pattern-clustergroup/templates/plumbing/argocd-super-role.yaml
  # WARNING: ONLY USE THIS FOR MANAGING CLUSTERS NOT FOR REGULAR USERS
  apiVersion: rbac.authorization.k8s.io/v1
-@@ -36,7 +227,7 @@
+@@ -36,7 +224,7 @@
  apiVersion: rbac.authorization.k8s.io/v1
  kind: ClusterRoleBinding
  metadata:
@@ -220,7 +217,7 @@
  roleRef:
    apiGroup: rbac.authorization.k8s.io
    kind: ClusterRole
-@@ -44,17 +235,423 @@
+@@ -44,17 +232,423 @@
  subjects:
    - kind: ServiceAccount
      # This is the {ArgoCD.name}-argocd-application-controller
@@ -650,7 +647,7 @@
  ---
  # Source: pattern-clustergroup/templates/plumbing/argocd.yaml
  apiVersion: argoproj.io/v1alpha1
-@@ -64,8 +661,8 @@
+@@ -64,8 +658,8 @@
    - argoproj.io/finalizer
    # Changing the name affects the ClusterRoleBinding, the generated secret,
    # route URL, and argocd.argoproj.io/managed-by annotations
@@ -661,7 +658,7 @@
    annotations:
      argocd.argoproj.io/compare-options: IgnoreExtraneous
  spec:
-@@ -90,15 +687,15 @@
+@@ -90,15 +684,15 @@
          command: ["/bin/bash", "-c"]
          args: ["helm template . --name-template ${ARGOCD_APP_NAME:0:52}
              -f $(git rev-parse --show-toplevel)/values-global.yaml
@@ -683,7 +680,7 @@
              --post-renderer ./kustomize"]
    applicationSet:
      resources:
-@@ -173,12 +770,94 @@
+@@ -173,12 +767,94 @@
  apiVersion: console.openshift.io/v1
  kind: ConsoleLink
  metadata:
