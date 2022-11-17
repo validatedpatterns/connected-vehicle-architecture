@@ -12,7 +12,7 @@ clusterGroup:
   namespaces:
   - bobbycar
   - vault
-  # - golang-external-secrets
+  - golang-external-secrets
 
   subscriptions:
     amq-broker-rhel8:
