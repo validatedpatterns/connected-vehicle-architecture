@@ -50,11 +50,11 @@ clusterGroup:
       project: hub
       path: common/hashicorp-vault
 
-    # golang-external-secrets:
-    #   name: golang-external-secrets
-    #   namespace: golang-external-secrets
-    #   project: hub
-    #   path: common/golang-external-secrets
+    golang-external-secrets:
+      name: golang-external-secrets
+      namespace: golang-external-secrets
+      project: hub
+      path: common/golang-external-secrets
 
     bobbycar-core-infra:
       name: bobbycar-core-infra
