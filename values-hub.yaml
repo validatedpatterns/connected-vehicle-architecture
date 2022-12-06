@@ -18,7 +18,7 @@ clusterGroup:
     amq-broker-rhel8:
       name: amq-broker-rhel8
       namespace: bobbycar
-      channel: 7.x
+      channel: 7.10.x
       #csv: amq-broker-operator.v7.9.1-opr-2
 
     amq-streams:
