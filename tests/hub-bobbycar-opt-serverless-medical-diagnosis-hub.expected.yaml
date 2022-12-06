@@ -1,0 +1,193 @@
+---
+# Source: bobbycar-opt-serverless/templates/bobbycar-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bobbycar-sa
+  namespace: bobbycar
+---
+# Source: bobbycar-opt-serverless/templates/bobbycar-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: bobbycarzone-watcher
+rules:
+  - apiGroups:
+      - bobbycar.redhat.com
+    resources:
+      - bobbycarzones
+    verbs: &everything
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+# Source: bobbycar-opt-serverless/templates/bobbycar-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bobbycarzone-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: bobbycarzone-watcher
+subjects:
+  - kind: ServiceAccount
+    name: bobbycar-sa
+    namespace: bobbycar
+---
+# Source: bobbycar-opt-serverless/templates/kn-services.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: bobbycar-zone-audit
+  namespace: bobbycar
+spec:
+  template:
+    metadata:
+      annotations:
+        #autoscaling.knative.dev/initialScale: "0"
+        autoscaling.knative.dev/window: "10s"
+    spec:
+      containers:
+        - image: gcr.io/knative-releases/knative.dev/eventing/cmd/event_display
+---
+# Source: bobbycar-opt-serverless/templates/kn-services.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: bobbycar-zone-approval
+  namespace: bobbycar
+spec:
+  template:
+    metadata:
+      annotations:
+        #autoscaling.knative.dev/initialScale: "0"
+        autoscaling.knative.dev/window: "10s"
+    spec:
+      containers:
+        - image: gcr.io/knative-releases/knative.dev/eventing/cmd/event_display
+---
+# Source: bobbycar-opt-serverless/templates/zone-change-service.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: zone-change-faas
+  namespace: bobbycar
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/target: "1"
+        #autoscaling.knative.dev/initialScale: "0"
+        autoscaling.knative.dev/window: "10s"
+    spec:
+      containers:
+        - image: quay.io/bobbycar/zone-change-service
+---
+# Source: bobbycar-opt-serverless/templates/kn-api-source.yaml
+apiVersion: sources.knative.dev/v1
+kind: ApiServerSource
+metadata:
+  name: zone-events-source
+  namespace: bobbycar
+spec:
+  serviceAccountName: bobbycar-sa
+  mode: Resource
+  resources:
+    - apiVersion: bobbycar.redhat.com/v1alpha1
+      kind: BobbycarZone
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: bobbycar
+---
+# Source: bobbycar-opt-serverless/templates/kn-broker.yaml
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: bobbycar
+  namespace: bobbycar
+---
+# Source: bobbycar-opt-serverless/templates/zone-change-kafka-source.yaml
+apiVersion: sources.knative.dev/v1beta1
+kind: KafkaSource
+metadata:
+  name: zone-change-kafka-source
+  namespace: bobbycar
+spec:
+  bootstrapServers:
+    - 'bobbycar-cluster-kafka-bootstrap.bobbycar.svc:9092'
+    - 'bobbycar-cluster-kafka-bootstrap.bobbycar.svc:9093'
+  consumerGroup: KnativeZoneChangeSource
+  net:
+    sasl:
+      password: { }
+      type: { }
+      user: { }
+    tls:
+      caCert: { }
+      cert: { }
+      key: { }
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: bobbycar
+  topics:
+    - bobbycar-zonechange
+---
+# Source: bobbycar-opt-serverless/templates/kn-trigger.yaml
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: bobbycar-zone-audit
+  namespace: bobbycar
+spec:
+  broker: bobbycar
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: bobbycar-zone-audit
+---
+# Source: bobbycar-opt-serverless/templates/kn-trigger.yaml
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: bobbycar-zone-approval
+  namespace: bobbycar
+spec:
+  filter:
+    attributes:
+      type: dev.knative.apiserver.resource.add
+  broker: bobbycar
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: bobbycar-zone-approval
+---
+# Source: bobbycar-opt-serverless/templates/zone-change-trigger.yaml
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: zone-change
+  namespace: bobbycar
+spec:
+  broker: bobbycar
+  filter:
+    attributes:
+      source: >-
+        /apis/v1/namespaces/bobbycar/kafkasources/zone-change-kafka-source#bobbycar-zonechange
+      type: dev.knative.kafka.event
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: zone-change-faas
+      namespace: bobbycar
