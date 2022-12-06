@@ -1,0 +1,421 @@
+---
+# Source: bobbycar-opt-dev-pipelines/templates/tekton-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+  namespace: default
+---
+# Source: bobbycar-opt-dev-pipelines/templates/maven-settings.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: maven-settings
+  namespace: default
+data:
+  settings.xml: >-
+    <?xml version="1.0" encoding="UTF-8"?> <settings
+    xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+      <servers>
+        <server>
+          <id>repo-release</id>
+          <username>admin</username>
+          <password></password>
+        </server>
+        <server>
+          <id>repo-snapshot</id>
+          <username>admin</username>
+          <password></password>
+        </server>
+      </servers>
+      <mirrors>
+        <mirror>
+          <id>mirror.default</id>
+          <url>http://nexus3-domain/repository/maven-public/</url>
+          <mirrorOf>central</mirrorOf>
+        </mirror>
+      </mirrors>
+      <profiles>
+        <profile>
+          <id>nexus</id>
+        </profile>
+      </profiles>
+      <activeProfiles>
+        <activeProfile>nexus</activeProfile>
+      </activeProfiles>
+    </settings>
+---
+# Source: bobbycar-opt-dev-pipelines/templates/carsim-pipe-pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: carsim-pipe-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+---
+# Source: bobbycar-opt-dev-pipelines/templates/tekton-sa.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tekton-triggers-clusterrole
+rules:
+  # EventListeners need to be able to fetch any clustertriggerbindings
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["clustertriggerbindings", "clusterinterceptors"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: bobbycar-opt-dev-pipelines/templates/tekton-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-triggers-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-clusterrole
+---
+# Source: bobbycar-opt-dev-pipelines/templates/tekton-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tekton-triggers-minimal
+  namespace: default
+rules:
+  # EventListeners need to be able to fetch all namespaced resources
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    # configmaps is needed for updating logging config
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  # Permissions to create resources in associated TriggerTemplates
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns", "pipelineresources", "taskruns"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["impersonate"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-triggers"]
+    verbs: ["use"]
+---
+# Source: bobbycar-opt-dev-pipelines/templates/tekton-sa.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-binding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tekton-triggers-minimal
+---
+# Source: bobbycar-opt-dev-pipelines/templates/event-listener.yaml
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: car-sim-triggerref
+  namespace: default
+spec:
+  podTemplate: {}
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - triggerRef: car-sim-trigger
+---
+# Source: bobbycar-opt-dev-pipelines/templates/carsim-pipe.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: carsim-pipe
+  namespace: default
+spec:
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: http://domain/repo/bobbycar.git
+        - name: revision
+          value: master
+        - name: submodules
+          value: "true"
+        - name: depth
+          value: "1"
+        - name: sslVerify
+          value: "true"
+        - name: deleteExisting
+          value: "true"
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: unit-tests
+      params:
+        - name: GOALS
+          value:
+            - -f
+            - components/car-simulator/pom.xml
+            - org.jacoco:jacoco-maven-plugin:0.8.6:prepare-agent
+            - test
+            - org.jacoco:jacoco-maven-plugin:0.8.6:report
+        - name: MAVEN_MIRROR_URL
+          value: http://nexus3-domain/repository/maven-public/
+        - name: PROXY_PROTOCOL
+          value: http
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: ClusterTask
+        name: maven
+      workspaces:
+        - name: maven-settings
+          workspace: maven-settings
+        - name: source
+          workspace: shared-workspace
+    - name: sonar-scan
+      params:
+        - name: GOALS
+          value:
+            - org.sonarsource.scanner.maven:sonar-maven-plugin:3.6.0.1398:sonar
+            - -f
+            - components/car-simulator/pom.xml
+            - -Dsonar.host.url=http://sonarqube-domain/
+            - -Dsonar.projectKey=car-simulator
+            - -Dsonar.login=token
+        - name: MAVEN_MIRROR_URL
+          value: http://nexus3-domain/repository/maven-public/
+        - name: PROXY_PROTOCOL
+          value: http
+      runAfter:
+        - unit-tests
+      taskRef:
+        kind: ClusterTask
+        name: maven
+      workspaces:
+        - name: maven-settings
+          workspace: maven-settings
+        - name: source
+          workspace: shared-workspace
+    - name: deploy-artifact
+      params:
+        - name: GOALS
+          value:
+            - deploy
+            - -f
+            - components/car-simulator/pom.xml
+            - -Dmaven.test.skip=true
+            - -Drepos.snapshot.url=http://nexus3-domain/repository/maven-snapshots/
+            - -Drepos.release.url=http://nexus3-domain/repository/maven-releases/
+        - name: MAVEN_MIRROR_URL
+          value: http://nexus3-domain/repository/maven-public/
+        - name: PROXY_PROTOCOL
+          value: http
+      runAfter:
+        - sonar-scan
+      taskRef:
+        kind: ClusterTask
+        name: maven
+      workspaces:
+        - name: maven-settings
+          workspace: maven-settings
+        - name: source
+          workspace: shared-workspace
+    - name: build-image
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/namespace/car-simulator
+        - name: BUILDER_IMAGE
+          value: quay.io/buildah/stable:v1.14.8
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./src/main/docker/Dockerfile.jvm
+        - name: CONTEXT
+          value: ./components/car-simulator/
+        - name: TLSVERIFY
+          value: "false"
+        - name: FORMAT
+          value: oci
+      runAfter:
+        - deploy-artifact
+      taskRef:
+        kind: Task
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+  workspaces:
+    - name: shared-workspace
+    - name: maven-settings
+---
+# Source: bobbycar-opt-dev-pipelines/templates/buildah-task.yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah
+  namespace: default
+spec:
+  description: |-
+    Buildah task builds source into a container image and then pushes it to a container registry.
+    Buildah Task builds source into a container image using Project Atomic's Buildah build tool.It uses Buildah's support for building from Dockerfiles, using its buildah bud command.This command executes the directives in the Dockerfile to assemble a container image, then pushes that image to a container registry.
+  params:
+    - description: Reference of the image buildah will produce.
+      name: IMAGE
+      type: string
+    - default: quay.io/buildah/stable:v1.14.8
+      description: The location of the buildah builder image.
+      name: BUILDER_IMAGE
+      type: string
+    - default: vfs
+      description: Set buildah storage driver
+      name: STORAGE_DRIVER
+      type: string
+    - default: ./Dockerfile
+      description: Path to the Dockerfile to build.
+      name: DOCKERFILE
+      type: string
+    - default: .
+      description: Path to the directory to use as context.
+      name: CONTEXT
+      type: string
+    - default: "true"
+      description: Verify the TLS on the registry endpoint (for push/pull to a non-TLS registry)
+      name: TLSVERIFY
+      type: string
+    - default: oci
+      description: The format of the built container, oci or docker
+      name: FORMAT
+      type: string
+    - default: ""
+      description: Extra parameters passed for the build command when building images.
+      name: BUILD_EXTRA_ARGS
+      type: string
+    - default: ""
+      description: Extra parameters passed for the push command when pushing images.
+      name: PUSH_EXTRA_ARGS
+      type: string
+  results:
+    - description: Digest of the image just built.
+      name: IMAGE_DIGEST
+  steps:
+    - image: $(params.BUILDER_IMAGE)
+      name: build
+      resources: {}
+      script: |
+        buildah --storage-driver=$(params.STORAGE_DRIVER) bud \
+          $(params.BUILD_EXTRA_ARGS) --format=$(params.FORMAT) \
+          --tls-verify=$(params.TLSVERIFY) --no-cache \
+          -f $(params.DOCKERFILE) -t $(params.IMAGE) $(params.CONTEXT)
+      securityContext:
+        privileged: false
+      volumeMounts:
+        - mountPath: /var/lib/containers
+          name: varlibcontainers
+      workingDir: $(workspaces.source.path)
+    - image: $(params.BUILDER_IMAGE)
+      name: push
+      resources: {}
+      script: |
+        buildah --storage-driver=$(params.STORAGE_DRIVER) push \
+          $(params.PUSH_EXTRA_ARGS) --tls-verify=$(params.TLSVERIFY) \
+          --digestfile $(workspaces.source.path)/image-digest $(params.IMAGE) \
+          docker://$(params.IMAGE)
+      securityContext:
+        privileged: false
+      volumeMounts:
+        - mountPath: /var/lib/containers
+          name: varlibcontainers
+      workingDir: $(workspaces.source.path)
+    - image: $(params.BUILDER_IMAGE)
+      name: digest-to-results
+      resources: {}
+      script: cat $(workspaces.source.path)/image-digest | tee /tekton/results/IMAGE_DIGEST
+  volumes:
+    - emptyDir: {}
+      name: varlibcontainers
+  workspaces:
+    - name: source
+---
+# Source: bobbycar-opt-dev-pipelines/templates/trigger.yaml
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: car-sim-trigger
+  namespace: default
+spec:
+  bindings:
+    - kind: TriggerBinding
+      ref: car-sim-binding
+  template:
+    name: car-sim-template
+---
+# Source: bobbycar-opt-dev-pipelines/templates/trigger-binding.yaml
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: car-sim-binding
+  namespace: default
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.after)
+    - name: gitrepositoryurl
+      value: $(body.repository.html_url)
+    - name: contenttype
+      value: $(header.Content-Type)
+---
+# Source: bobbycar-opt-dev-pipelines/templates/trigger-template.yaml
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: car-sim-template
+  namespace: default
+spec:
+  params:
+    - default: main
+      description: The git revision
+      name: gitrevision
+    - description: The git repository url
+      name: gitrepositoryurl
+    - default: This is the default message
+      description: The message to print
+      name: message
+    - description: The Content-Type of the event
+      name: contenttype
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: car-sim-run-
+      spec:
+        pipelineRef:
+          name: carsim-pipe
+        serviceAccountName: pipeline
+        timeout: 1h0m0s
+        workspaces:
+          - name: shared-workspace
+            persistentVolumeClaim:
+              claimName: carsim-pipe-pvc
+          - configMap:
+              name: maven-settings
+            name: maven-settings
