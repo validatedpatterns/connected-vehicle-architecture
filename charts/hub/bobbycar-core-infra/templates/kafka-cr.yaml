@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   kafka:
-    version: 3.1.0
+    version: 3.2.3
     replicas: {{ .Values.kafka.cluster.brokerReplicas }}
     listeners:
     - name: plain
