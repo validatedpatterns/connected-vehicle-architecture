@@ -1,6 +1,6 @@
 #ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
 #ocpApi: api.mcg-two.blueprints.rhecoeng.com⤶
-#namespace: bobbycar
+namespace: bobbycar
 
 clusterGroup:
   name: hub
