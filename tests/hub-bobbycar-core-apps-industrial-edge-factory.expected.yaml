@@ -50,16 +50,6 @@ stringData:
     com.redhat.bobbycar.camelk.mqtt.topicZoneChange: bobbycar/zonechange
 type: Opaque
 ---
-# Source: bobbycar-core-apps/templates/weather-service-secret.yaml
-kind: Secret
-apiVersion: v1
-metadata:
-  name: weather-service-secret
-stringData:
-    apiKey: 
-    ibmApiKey: 
-type: Opaque
----
 # Source: bobbycar-core-apps/templates/car-simulator-cm.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -4040,6 +4030,33 @@ spec:
     remoteRef:
       key: secret/data/hub/googleapi
       property: key
+---
+# Source: bobbycar-core-apps/templates/weather-service-secret.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: weather-service-externalsecret
+spec:
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+
+  target:
+    name: weather-service-secret
+    template:
+      engineVersion: v2
+      data:
+        apiKey: ""
+        ibmApiKey: ""
+  data:
+  - secretKey: openweatherapi
+    remoteRef:
+      key: secret/data/hub/weather
+      property: openweatherkey
+  - secretKey: ibmweatherapi
+    remoteRef:
+      key: secret/data/hub/weather
+      property: ibmweatherkey
 ---
 # Source: bobbycar-core-apps/templates/cacheService-integration.yaml
 apiVersion: camel.apache.org/v1
