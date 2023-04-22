@@ -4046,8 +4046,8 @@ spec:
     template:
       engineVersion: v2
       data:
-        apiKey: ""
-        ibmApiKey: ""
+        apiKey: '{{ .openweatherapi }}'
+        ibmApiKey: '{{ .ibmweatherapi }}'
   data:
   - secretKey: openweatherapi
     remoteRef:
