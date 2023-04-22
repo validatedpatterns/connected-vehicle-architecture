@@ -27,7 +27,7 @@ clusterGroup:
     camelk:
       name: red-hat-camel-k
       namespace: bobbycar
-      channel: 1.6.x
+      channel: 1.10.x
       #csv: red-hat-camel-k-operator.v1.6.3
 
     datagrid:
