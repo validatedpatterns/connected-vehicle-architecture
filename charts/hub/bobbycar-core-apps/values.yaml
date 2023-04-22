@@ -1,6 +1,6 @@
-namespace: test
+namespace:
 appName: Bobbycar
-ocpDomain: test.cluster.domain.com
+ocpDomain:
 ocpApi:
 
 mqtt:
@@ -13,6 +13,8 @@ kafka:
     gps: bobbycar-gps
     metrics: bobbycar-metrics
     zonechange: bobbycar-zonechange
+    metricsAggregated: bobbycar-metrics-aggregated
+    speedAlerts: bobbycar-speed-alert
   bootstrap:
     servers: bobbycar-cluster-kafka-bootstrap:9092
 
@@ -31,7 +33,24 @@ dashboard:
   config:
     googleApiKey:
     threeScaleApiKey: replaceme
-    hdppEndpoint: http://ntt-stream-hdpp.apps.ocp4.rhlab.de/playlist.m3u8
+    hdppEndpoint: "http://localhost/playlist.m3u8"
+    ocpApiUrl: https://localhost:6443
+    ocpToken:
+    enableRoadClassification: false
+    defaultCarBrand: P
+
+telemetryAggregator:
+  config:
+    speedAlert: 100
+    windowsize: 2
+
+weatherService:
+  owm:
+    api:
+      key:
+  ibm:
+    api:
+      key:
 
 carSimulator:
   name: car-simulator 

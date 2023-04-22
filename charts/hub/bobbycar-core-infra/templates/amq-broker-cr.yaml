@@ -7,9 +7,8 @@ spec:
   deploymentPlan:
     size: {{ .Values.amqBroker.instances }}
     image: placeholder
-    # FIXME(bandini): these seem to disappear from the live manifest
-    #requireLogin: false
-    #persistenceEnabled: false
+    requireLogin: false
+    persistenceEnabled: false
     journalType: nio
     messageMigration: false
   console:

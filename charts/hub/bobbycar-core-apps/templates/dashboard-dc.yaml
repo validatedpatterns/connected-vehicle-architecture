@@ -28,7 +28,7 @@ spec:
         deploymentconfig: dashboard
     spec:
       containers:
-      - image: quay.io/bobbycar/dashboard:1.0.1
+      - image: quay.io/bobbycar/dashboard:1.2.5
         imagePullPolicy: Always
         name: dashboard
         ports:
@@ -47,9 +47,9 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-        - secret:
+        - configMap:
             defaultMode: 438
-            secretName: dashboard-config
+            name: dashboard-config
           name: dashboard-cfg-vol
   test: false
   triggers:
