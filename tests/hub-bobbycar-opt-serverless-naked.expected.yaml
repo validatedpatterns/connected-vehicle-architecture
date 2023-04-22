@@ -39,6 +39,21 @@ subjects:
     name: bobbycar-sa
     namespace: bobbycar
 ---
+# Source: bobbycar-opt-serverless/templates/bobbycar-sa.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: bobbycar-sa-deployments
+  namespace: bobbycar
+subjects:
+  - kind: ServiceAccount
+    name: bobbycar-sa
+    namespace: bobbycar
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+---
 # Source: bobbycar-opt-serverless/templates/kn-services.yaml
 apiVersion: serving.knative.dev/v1
 kind: Service
@@ -82,11 +97,14 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/target: "1"
-        #autoscaling.knative.dev/initialScale: "0"
+        autoscaling.knative.dev/metric: "rps"
         autoscaling.knative.dev/window: "10s"
     spec:
       containers:
-        - image: quay.io/bobbycar/zone-change-service
+        - image: quay.io/bobbycar/zone-change-service:1.0-jvm
+          env:
+            - name: 'quarkus.rest-client.ota-api.url'
+              value: "http://<ota-server-domain>"
 ---
 # Source: bobbycar-opt-serverless/templates/kn-api-source.yaml
 apiVersion: sources.knative.dev/v1

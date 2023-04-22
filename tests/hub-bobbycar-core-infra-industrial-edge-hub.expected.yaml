@@ -9,9 +9,8 @@ spec:
   deploymentPlan:
     size: 1
     image: placeholder
-    # FIXME(bandini): these seem to disappear from the live manifest
-    #requireLogin: false
-    #persistenceEnabled: false
+    requireLogin: false
+    persistenceEnabled: false
     journalType: nio
     messageMigration: false
   console:
@@ -58,7 +57,6 @@ metadata:
   namespace: test
 spec:
   kafka:
-    version: 3.2.3
     replicas: 2
     listeners:
     - name: plain
@@ -74,8 +72,6 @@ spec:
       tls: true
       type: route
     config:
-      inter.broker.protocol.version: '3.0'
-      log.message.format.version: '3.0'
       offsets.topic.replication.factor: 1
       transaction.state.log.min.isr: 1
       transaction.state.log.replication.factor: 1
@@ -116,6 +112,21 @@ spec:
     retention.ms: 60000
     segment.bytes: 1073741824
 ---
+# Source: bobbycar-core-infra/templates/kafka-metrics-aggregated-topic.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: bobbycar-metrics-aggregated
+  namespace: test
+  labels:
+    strimzi.io/cluster: bobbycar-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 60000
+    segment.bytes: 1073741824
+---
 # Source: bobbycar-core-infra/templates/kafka-metrics-topic.yaml
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
@@ -129,6 +140,21 @@ spec:
   replicas: 1
   config:
     retention.ms: 60000
+    segment.bytes: 1073741824
+---
+# Source: bobbycar-core-infra/templates/kafka-speed-alert-topic.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: bobbycar-speed-alert
+  namespace: test
+  labels:
+    strimzi.io/cluster: bobbycar-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 300000
     segment.bytes: 1073741824
 ---
 # Source: bobbycar-core-infra/templates/kafka-zonechange-topic.yaml
