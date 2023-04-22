@@ -11,10 +11,13 @@ help:
 %:
 	make -f common/Makefile $*
 
-install: operator-deploy post-install ## installs the pattern, inits the vault and loads the secrets
+.PHONY: install
+install: operator-deploy post-install ## installs the pattern loads the secrets
 	echo "Installed"
 
-post-install: ## Post-install tasks - vault init and load-secrets
+.PHONY: post-install
+post-install: ## Post-install tasks
+	make load-secrets
 	@echo "Done"
 
 test:
