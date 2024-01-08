@@ -60,6 +60,12 @@ clusterGroup:
       path: charts/hub/bobbycar-core-infra
       extraHubClusterDomainFields:
         - ocpDomain
+      ignoreDifferences:
+      - kind: KafkaTopic
+        jsonPointers:
+        - /spec/config/retention.ms
+        - /spec/config/segement.bytes
+
 
     bobbycar-core-apps:
       name: bobbycar-core-apps
