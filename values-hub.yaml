@@ -45,13 +45,15 @@ clusterGroup:
       name: vault
       namespace: vault
       project: hub
-      path: common/hashicorp-vault
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
 
     golang-external-secrets:
       name: golang-external-secrets
       namespace: golang-external-secrets
       project: hub
-      path: common/golang-external-secrets
+      chart: golang-external-secrets
+      chartVersion: 0.1.*
 
     bobbycar-core-infra:
       name: bobbycar-core-infra
@@ -65,7 +67,6 @@ clusterGroup:
         jsonPointers:
         - /spec/config/retention.ms
         - /spec/config/segement.bytes
-
 
     bobbycar-core-apps:
       name: bobbycar-core-apps
