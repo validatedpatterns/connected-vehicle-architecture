@@ -1,6 +1,6 @@
 ---
 global:
-  pattern: multicloud-gitops
+  pattern: connected-vehicle-architecture
 
   options:
     useCSV: false
@@ -9,3 +9,6 @@ global:
 
 main:
   clusterGroupName: hub
+  multiSourceConfig:
+    enabled: true
+    clusterGroupVersion: "0.9.*"
