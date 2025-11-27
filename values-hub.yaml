@@ -7,9 +7,9 @@ clusterGroup:
   isHubCluster: true
 
   namespaces:
-  - bobbycar
-  - vault
-  - golang-external-secrets
+    - bobbycar
+    - vault
+    - golang-external-secrets
 
   subscriptions:
     amq-broker-rhel8:
@@ -37,8 +37,8 @@ clusterGroup:
       # csv: datagrid-operator.v8.2.8
 
   projects:
-  - bobbycar
-  - hub
+    - bobbycar
+    - hub
 
   applications:
     vault:
@@ -65,8 +65,8 @@ clusterGroup:
       ignoreDifferences:
         - kind: KafkaTopic
           jsonPointers:
-          - /spec/config/retention.ms
-          - /spec/config/segement.bytes
+            - /spec/config/retention.ms
+            - /spec/config/segement.bytes
 
     bobbycar-core-apps:
       name: bobbycar-core-apps
@@ -76,20 +76,20 @@ clusterGroup:
       extraHubClusterDomainFields:
         - ocpDomain
 
-  #imperative:
-    # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
-    # The default schedule is every 10 minutes: imperative.schedule
-    # Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
-    # imagePullPolicy is set to always: imperative.imagePullPolicy
-    # For additional overrides that apply to the jobs, please refer to
-    # https://validatedpatterns.io/patterns/multicloud-gitops/mcg-imperative-actions/
-    # jobs:
-    # - name: hello-world
-    #   # ansible playbook to be run
-    #   playbook: common/ansible/playbooks/hello-world/hello-world.yaml
-    #   # per playbook timeout in seconds
-    #   timeout: 234
-    #   # verbosity: "-v"
+    # imperative:
+    #   NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
+    #   The default schedule is every 10 minutes: imperative.schedule
+    #   Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
+    #   imagePullPolicy is set to always: imperative.imagePullPolicy
+    #   For additional overrides that apply to the jobs, please refer to
+    #   https://validatedpatterns.io/patterns/multicloud-gitops/mcg-imperative-actions/
+    #   jobs:
+    #   - name: hello-world
+    #     # ansible playbook to be run
+    #     playbook: common/ansible/playbooks/hello-world/hello-world.yaml
+    #     # per playbook timeout in seconds
+    #     timeout: 234
+    #     # verbosity: "-v"
 
   managedClusterGroups:
     region-one:

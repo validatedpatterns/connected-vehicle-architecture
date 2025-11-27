@@ -16,5 +16,3 @@ jobs:
 
       - name: Lint Ansible Playbook
         uses: ansible/ansible-lint@43e758bad47344f1ce7b699c0020299f486a8026
-        with:
-          path: "ansible/"
