@@ -1,5 +1,5 @@
-#ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
-#ocpApi: api.mcg-two.blueprints.rhecoeng.com⤶
+# ocpDomain: apps.mcg-two.blueprints.rhecoeng.com
+# ocpApi: api.mcg-two.blueprints.rhecoeng.com⤶
 namespace: bobbycar
 
 clusterGroup:
@@ -7,38 +7,38 @@ clusterGroup:
   isHubCluster: true
 
   namespaces:
-  - bobbycar
-  - vault
-  - golang-external-secrets
+    - bobbycar
+    - vault
+    - golang-external-secrets
 
   subscriptions:
     amq-broker-rhel8:
       name: amq-broker-rhel8
       namespace: bobbycar
       channel: 7.10.x
-      #csv: amq-broker-operator.v7.9.1-opr-2
+      # csv: amq-broker-operator.v7.9.1-opr-2
 
     amq-streams:
       name: amq-streams
       namespace: bobbycar
       channel: stable
-      #csv: amqstreams.v2.0.0-0
+      # csv: amqstreams.v2.0.0-0
 
     camelk:
       name: red-hat-camel-k
       namespace: bobbycar
       channel: 1.10.x
-      #csv: red-hat-camel-k-operator.v1.6.3
+      # csv: red-hat-camel-k-operator.v1.6.3
 
     datagrid:
       name: datagrid
       namespace: bobbycar
       channel: 8.2.x
-      #csv: datagrid-operator.v8.2.8
+      # csv: datagrid-operator.v8.2.8
 
   projects:
-  - bobbycar
-  - hub
+    - bobbycar
+    - hub
 
   applications:
     vault:
@@ -63,10 +63,10 @@ clusterGroup:
       extraHubClusterDomainFields:
         - ocpDomain
       ignoreDifferences:
-      - kind: KafkaTopic
-        jsonPointers:
-        - /spec/config/retention.ms
-        - /spec/config/segement.bytes
+        - kind: KafkaTopic
+          jsonPointers:
+            - /spec/config/retention.ms
+            - /spec/config/segement.bytes
 
     bobbycar-core-apps:
       name: bobbycar-core-apps
@@ -76,27 +76,27 @@ clusterGroup:
       extraHubClusterDomainFields:
         - ocpDomain
 
-  #imperative:
-    # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
-    # The default schedule is every 10 minutes: imperative.schedule
-    # Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
-    # imagePullPolicy is set to always: imperative.imagePullPolicy
-    # For additional overrides that apply to the jobs, please refer to
-    # https://hybrid-cloud-patterns.io/imperative-actions/#additional-job-customizations
-    #jobs:
-    #- name: hello-world
-    #  # ansible playbook to be run
-    #  playbook: common/ansible/playbooks/hello-world/hello-world.yaml
-    #  # per playbook timeout in seconds
-    #  timeout: 234
-    #  # verbosity: "-v"
+    # imperative:
+    #   NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
+    #   The default schedule is every 10 minutes: imperative.schedule
+    #   Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
+    #   imagePullPolicy is set to always: imperative.imagePullPolicy
+    #   For additional overrides that apply to the jobs, please refer to
+    #   https://validatedpatterns.io/patterns/multicloud-gitops/mcg-imperative-actions/
+    #   jobs:
+    #   - name: hello-world
+    #     # ansible playbook to be run
+    #     playbook: common/ansible/playbooks/hello-world/hello-world.yaml
+    #     # per playbook timeout in seconds
+    #     timeout: 234
+    #     # verbosity: "-v"
 
   managedClusterGroups:
     region-one:
       name: region-one
       helmOverrides:
-      - name: clusterGroup.isHubCluster
-        value: false
+        - name: clusterGroup.isHubCluster
+          value: false
       clusterSelector:
         matchLabels:
           clusterGroup: region-one
